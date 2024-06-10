@@ -1,0 +1,140 @@
+module;
+import lib.ft4.accounts. {
+    add_auth_descriptor_to_account,
+    auth_descriptor,
+    auth_type,
+    single_sig_auth_descriptor,
+    Unsafe,
+    account
+};
+import lib.ft4.auth. { signature, _recover_eth_address };
+import lib.ft4.auth;
+entity user {
+    mutable name;
+    key id: byte_array;
+    key account;
+}
+
+entity stake {
+    key user: user;
+    mutable amount: integer;
+    start_time: integer;
+    mutable yield_claimed: integer;
+}
+
+entity unstake_request {
+    key user: user;
+    amount: integer;
+    request_time: integer;
+}
+
+namespace evm {
+    query get_register_message(evm_address: byte_array) =
+        "Create account for EVM wallet:\n%s"
+        .format(evm_address.to_hex().lower_case());
+
+    function create_account_from_evm(evm_address: byte_array, signature): account {
+        val register_msg = get_register_message(evm_address);
+        val recovered_address = _recover_eth_address(register_msg, signature);
+        require(recovered_address == evm_address, "Signature not valid for the provided key");
+
+        val auth_descriptor = auth_descriptor(
+            auth_type = auth_type.ES,
+            args = [["A"].to_gtv(), evm_address.to_gtv()],
+            rules = null.to_gtv()
+        );
+        val accountId = Unsafe.create_account_with_auth(auth_descriptor);
+        return account @ { accountId };
+    }
+}
+
+operation register_account(name, evm_address: byte_array, signature) {
+    require(op_context.get_signers().size() > 0, "Must sign with a session keypair");
+    val account = evm.create_account_from_evm(evm_address, signature);
+    val user = create user ( name, evm_address, account );
+    add_auth_descriptor_to_account(account, single_sig_auth_descriptor(op_context.get_signers()[0], set(["MySession"])));
+}
+
+operation stake_tokens(amount: integer) {
+    val account = auth.authenticate();
+    val user = user @ { account };
+    require(amount > 0, "Amount must be greater than zero");
+
+    if (exists(stake @? { .user == user })) {
+        update stake @ { .user == user } (
+            .amount += amount
+        );
+    } else {
+        create stake ( user = user, amount = amount, start_time = op_context.last_block_time, yield_claimed = 0 );
+    }
+}
+
+
+operation claim_yield() {
+    val account = auth.authenticate();
+    val user = user @ { account };
+    val st = stake @ { .user == user };
+    val current_time = current_time_value();
+    val time_diff = current_time - st.start_time;
+    val yearly_yield = (st.amount * 10) / 100;
+    val accumulated_yield = (yearly_yield * time_diff) / (365 * 24 * 60 * 60) - st.yield_claimed;
+
+    require(accumulated_yield > 0, "No yield to claim");
+
+    update st (
+        .yield_claimed += accumulated_yield
+    );
+}
+
+operation initiate_unstake(amount: integer) {
+    val account = auth.authenticate();
+    val user = user @ { account };
+    val st = stake @ { .user == user };
+
+    require(amount > 0 and amount <= st.amount, "Invalid unstake amount");
+
+    create unstake_request ( user = user, amount = amount, request_time = op_context.last_block_time );
+}
+
+operation complete_unstake() {
+    val account = auth.authenticate();
+    val user = user @ { account };
+    val ur = unstake_request @ { .user == user };
+    val current_time = current_time_value();
+    val two_weeks = 14 * 24 * 60 * 60;
+
+    require(current_time >= ur.request_time + two_weeks, "Unstake period not yet completed");
+
+    val st = stake @ { .user == user };
+    update st (
+        .amount -= ur.amount
+    );
+    delete unstake_request @ { .user == user };
+}
+
+query get_current_yield(user_id: byte_array): integer {
+    val user = user @ { .id == user_id };
+    val st = stake @ { .user == user };
+    val current_time = current_time_value();
+    val time_diff = current_time - st.start_time;
+    val yearly_yield = (st.amount * 10) / 100;
+    val accumulated_yield = (yearly_yield * time_diff) / (365 * 24 * 60 * 60) - st.yield_claimed;
+    return accumulated_yield;
+}
+
+query get_unstake_status(user_id: byte_array): (amount: integer, time_left: integer) {
+    val user = user @ { .id == user_id };
+    val ur = unstake_request @ { .user == user };
+    val current_time = current_time_value();
+    val two_weeks = 14 * 24 * 60 * 60;
+    val time_left = (ur.request_time + two_weeks) - current_time;
+    return (amount = ur.amount, time_left = time_left);
+}
+
+function current_time_value() {
+    return op_context.last_block_time;
+}
+@extend(auth.auth_handler)
+function () = auth.add_auth_handler(
+   flags = ["MySession"]
+);
