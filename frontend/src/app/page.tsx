@@ -3,5 +3,5 @@
 import StakeTokens from "@/components/StakeTokens";
 
 export default function NewPostPage() {
-  return <p>welcome</p>;
+  return <StakeTokens />;
 }

@@ -1,5 +1,38 @@
 import React, { useState } from "react";
+import styled from "styled-components";
 import { useSessionContext } from "./ContextProvider";
+
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+`;
+
+const Title = styled.h2`
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+`;
+
+const Button = styled.button`
+  background-color: #4a90e2;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.5rem 2rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: #3572b1;
+  }
+`;
+
+const Message = styled.p`
+  margin-top: 1rem;
+  color: #333;
+`;
 
 const ClaimYield: React.FC = () => {
   const session = useSessionContext();
@@ -19,16 +52,11 @@ const ClaimYield: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
-      <h2>Claim Yield</h2>
-      <button
-        onClick={handleClaim}
-        className="bg-blue-500 hover:bg-blue-600 w-32 text-white font-bold py-2 px-4 rounded mt-4"
-      >
-        Claim
-      </button>
-      {message && <p className="mt-4">{message}</p>}
-    </div>
+    <Container>
+      <Title>Claim Yield</Title>
+      <Button onClick={handleClaim}>Claim</Button>
+      {message && <Message>{message}</Message>}
+    </Container>
   );
 };
 

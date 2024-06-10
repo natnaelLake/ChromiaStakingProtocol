@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import styled from "styled-components";
 import { useSessionContext, useEvmContext } from "./ContextProvider";
 
 interface Stake {
@@ -6,6 +7,35 @@ interface Stake {
   yield_claimed: number;
   start_time: number;
 }
+
+const Container = styled.div`
+  padding: 2rem;
+`;
+
+const Title = styled.h2`
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+`;
+
+const List = styled.ul`
+  list-style: none;
+  padding: 0;
+`;
+
+const ListItem = styled.li`
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+`;
+
+const Property = styled.div`
+  margin-bottom: 0.5rem;
+`;
+
+const NoStakesMessage = styled.p`
+  margin-top: 1rem;
+`;
 
 const UserStakes: React.FC = () => {
   const session = useSessionContext();
@@ -31,25 +61,25 @@ const UserStakes: React.FC = () => {
   }, [session, evmAddress]);
 
   return (
-    <div className="p-6">
-      <h2>User Stakes</h2>
+    <Container>
+      <Title>User Stakes</Title>
       {stakes.length > 0 ? (
-        <ul>
+        <List>
           {stakes.map((stake, index) => (
-            <li key={index} className="mb-4">
-              <div>Amount: {stake.amount}</div>
-              <div>Yield Claimed: {stake.yield_claimed}</div>
-              <div>
+            <ListItem key={index}>
+              <Property>Amount: {stake.amount}</Property>
+              <Property>Yield Claimed: {stake.yield_claimed}</Property>
+              <Property>
                 Start Time: {new Date(stake.start_time).toLocaleString()}
-              </div>
-            </li>
+              </Property>
+            </ListItem>
           ))}
-        </ul>
+        </List>
       ) : (
-        <p>No stakes found</p>
+        <NoStakesMessage>No stakes found</NoStakesMessage>
       )}
       {message && <p className="mt-4">{message}</p>}
-    </div>
+    </Container>
   );
 };
 
