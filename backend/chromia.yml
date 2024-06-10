@@ -10,12 +10,12 @@ blockchains:
 compile:
   rellVersion: 0.12.0
 database:
-  schema: schema_chromi_staking
+  schema: staking_protocol_schema
 test:
   modules:
     - test
 libs:
-  ft4:
+ ft4:
     registry: https://bitbucket.org/chromawallet/ft3-lib
     tagOrBranch: v0.1.7r
     path: rell/src/lib/ft4

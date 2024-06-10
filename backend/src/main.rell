@@ -4,11 +4,14 @@ import lib.ft4.accounts. {
     auth_descriptor,
     auth_type,
     single_sig_auth_descriptor,
+    create_account_with_auth,
     Unsafe,
-    account
+    account,
+    account_auth_descriptor
 };
 import lib.ft4.auth. { signature, _recover_eth_address };
 import lib.ft4.auth;
+
 entity user {
     mutable name;
     key id: byte_array;
@@ -29,37 +32,60 @@ entity unstake_request {
 }
 
 namespace evm {
+    // Query to generate a registration message for an EVM address
     query get_register_message(evm_address: byte_array) =
         "Create account for EVM wallet:\n%s"
         .format(evm_address.to_hex().lower_case());
 
+    // Function to create an account from an EVM address and its signature
     function create_account_from_evm(evm_address: byte_array, signature): account {
         val register_msg = get_register_message(evm_address);
         val recovered_address = _recover_eth_address(register_msg, signature);
         require(recovered_address == evm_address, "Signature not valid for the provided key");
 
-        val auth_descriptor = auth_descriptor(
+        // Create a unique auth descriptor for the account
+        val auth_des = auth_descriptor(
             auth_type = auth_type.ES,
             args = [["A"].to_gtv(), evm_address.to_gtv()],
             rules = null.to_gtv()
         );
-        val accountId = Unsafe.create_account_with_auth(auth_descriptor);
-        return account @ { accountId };
+
+        // Check if an account with the given auth descriptor already exists
+        val accountId = auth_des.hash();
+        if (exists(account @? { .id == accountId })) {
+            return account @ { accountId };
+        }
+
+        // Create a new account if it does not exist
+        val newAccountId = Unsafe.create_account_with_auth(auth_des);
+        return account @ { newAccountId };
     }
 }
 
+// Operation to register a new account with a name, EVM address, and signature
 operation register_account(name, evm_address: byte_array, signature) {
     require(op_context.get_signers().size() > 0, "Must sign with a session keypair");
     val account = evm.create_account_from_evm(evm_address, signature);
-    val user = create user ( name, evm_address, account );
-    add_auth_descriptor_to_account(account, single_sig_auth_descriptor(op_context.get_signers()[0], set(["MySession"])));
+    
+    // Check if a user with the given account already exists
+    if (not exists(user @? { .account == account })) {
+        create user (name, evm_address, account);
+    }
+    
+    // Create and add a new auth descriptor if it does not exist
+    val auth_desc = single_sig_auth_descriptor(op_context.get_signers()[0], set(["MySession"]));
+    if (not exists(account_auth_descriptor @? { .account == account, .id == auth_desc.hash() })) {
+        add_auth_descriptor_to_account(account, auth_desc);
+    }
 }
 
+// Operation to stake tokens
 operation stake_tokens(amount: integer) {
     val account = auth.authenticate();
     val user = user @ { account };
     require(amount > 0, "Amount must be greater than zero");
 
+    // Update the stake if it exists, otherwise create a new stake
     if (exists(stake @? { .user == user })) {
         update stake @ { .user == user } (
             .amount += amount
@@ -69,7 +95,7 @@ operation stake_tokens(amount: integer) {
     }
 }
 
-
+// Operation to claim yield
 operation claim_yield() {
     val account = auth.authenticate();
     val user = user @ { account };
@@ -81,11 +107,13 @@ operation claim_yield() {
 
     require(accumulated_yield > 0, "No yield to claim");
 
+    // Update the claimed yield
     update st (
         .yield_claimed += accumulated_yield
     );
 }
 
+// Operation to initiate unstaking of tokens
 operation initiate_unstake(amount: integer) {
     val account = auth.authenticate();
     val user = user @ { account };
@@ -93,9 +121,11 @@ operation initiate_unstake(amount: integer) {
 
     require(amount > 0 and amount <= st.amount, "Invalid unstake amount");
 
+    // Create an unstake request
     create unstake_request ( user = user, amount = amount, request_time = op_context.last_block_time );
 }
 
+// Operation to complete unstaking after the required time period
 operation complete_unstake() {
     val account = auth.authenticate();
     val user = user @ { account };
@@ -105,6 +135,7 @@ operation complete_unstake() {
 
     require(current_time >= ur.request_time + two_weeks, "Unstake period not yet completed");
 
+    // Update the stake and delete the unstake request
     val st = stake @ { .user == user };
     update st (
         .amount -= ur.amount
@@ -112,6 +143,7 @@ operation complete_unstake() {
     delete unstake_request @ { .user == user };
 }
 
+// Query to get the current yield for a user
 query get_current_yield(user_id: byte_array): integer {
     val user = user @ { .id == user_id };
     val st = stake @ { .user == user };
@@ -122,6 +154,7 @@ query get_current_yield(user_id: byte_array): integer {
     return accumulated_yield;
 }
 
+// Query to get the unstake status for a user
 query get_unstake_status(user_id: byte_array): (amount: integer, time_left: integer) {
     val user = user @ { .id == user_id };
     val ur = unstake_request @ { .user == user };
@@ -131,10 +164,27 @@ query get_unstake_status(user_id: byte_array): (amount: integer, time_left: inte
     return (amount = ur.amount, time_left = time_left);
 }
 
+// Query to get a list of users with pagination
+query get_users(pointer: integer, n_users: integer) {
+    val users = user @* {} (name = "%s#%s".format(.name, .id.to_hex().sub(0, 5)), id = .id) offset pointer limit n_users;
+    return (
+        pointer = pointer + users.size(),
+        users = users
+    );
+}
+
+// Operation to delete all users
+operation deleteUsers() {
+    delete user @* {};
+}
+
+// Function to get the current time value from the operation context
 function current_time_value() {
     return op_context.last_block_time;
 }
+
+// Extend the auth handler to add a new auth handler
 @extend(auth.auth_handler)
 function () = auth.add_auth_handler(
-   flags = ["MySession"]
+    flags = ["MySession"]
 );
