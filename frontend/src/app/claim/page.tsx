@@ -1,7 +1,7 @@
 "use client";
 
-import ClaimYield from "@/components/ClaimYield";
+import ClaimOneYield from "@/components/ClaimYield";
 
 export default function NewPostPage() {
-  return <ClaimYield />;
+  return <ClaimOneYield />;
 }

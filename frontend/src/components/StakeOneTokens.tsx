@@ -1,3 +1,4 @@
+'use client'
 import React from "react";
 import styled from "styled-components";
 import { Button, TextField, Typography, Card as MuiCard } from "@mui/material";
@@ -35,7 +36,7 @@ const validationSchema = Yup.object({
     .required("Amount is required"),
 });
 
-const StakeTokens: React.FC = () => {
+const StakeOneTokens: React.FC = () => {
   const session = useSessionContext();
   const [message, setMessage] = React.useState<string>("");
 
@@ -111,4 +112,4 @@ const StakeTokens: React.FC = () => {
   );
 };
 
-export default StakeTokens;
+export default StakeOneTokens;

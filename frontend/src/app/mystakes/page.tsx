@@ -1,7 +1,7 @@
 "use client";
 
-import UserStakes from "@/components/UserStakes";
+import UserOneStakes from "@/components/UserOneStakes";
 
 export default function NewPostPage() {
-  return <UserStakes />;
+  return <UserOneStakes />;
 }

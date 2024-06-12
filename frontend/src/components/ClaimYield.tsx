@@ -1,3 +1,4 @@
+'use client'
 import React, { useState } from "react";
 import styled from "styled-components";
 import { useSessionContext } from "./ContextProvider";
@@ -34,7 +35,7 @@ const Message = styled.p`
   color: #333;
 `;
 
-const ClaimYield: React.FC = () => {
+const ClaimOneYield: React.FC = () => {
   const session = useSessionContext();
   const [message, setMessage] = useState<string>("");
 
@@ -60,4 +61,4 @@ const ClaimYield: React.FC = () => {
   );
 };
 
-export default ClaimYield;
+export default ClaimOneYield;

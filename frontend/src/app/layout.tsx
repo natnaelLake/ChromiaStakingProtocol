@@ -1,10 +1,10 @@
-import NavBar from "@/components/NavBar";
-import "./globals.css";
+// import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ContextProvider } from "@/components/ContextProvider";
+import NavBar from "@/components/NavBar";
 
-const inter = Inter({ subsets: ["latin"] });
+// const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Chromia Staking Protocol",
@@ -18,7 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body>
         <ContextProvider>
           <NavBar />
           {children}

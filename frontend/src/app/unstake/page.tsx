@@ -1,7 +1,8 @@
 "use client";
 
-import UnstakeTokens from "@/components/UnstakeTokens";
+import UnstakeOneTokens from "@/components/UnstakeOneTokens";
+
 
 export default function NewPostPage() {
-  return <UnstakeTokens />;
+  return <UnstakeOneTokens />;
 }

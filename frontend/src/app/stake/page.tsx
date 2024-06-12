@@ -1,7 +1,8 @@
 "use client";
 
-import StakeTokens from "@/components/StakeTokens";
+import StakeOneTokens from "@/components/StakeOneTokens";
+
 
 export default function NewPostPage() {
-  return <StakeTokens />;
+  return <StakeOneTokens />;
 }

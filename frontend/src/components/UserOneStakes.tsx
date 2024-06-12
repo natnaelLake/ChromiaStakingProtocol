@@ -37,7 +37,7 @@ const NoStakesMessage = styled.p`
   margin-top: 1rem;
 `;
 
-const UserStakes: React.FC = () => {
+const UserOneStakes: React.FC = () => {
   const session = useSessionContext();
   const evmAddress = useEvmContext();
   const [stakes, setStakes] = useState<Stake[]>([]);
@@ -83,4 +83,4 @@ const UserStakes: React.FC = () => {
   );
 };
 
-export default UserStakes;
+export default UserOneStakes;

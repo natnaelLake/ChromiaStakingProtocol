@@ -35,8 +35,8 @@ export function ContextProvider({ children }: { children: ReactNode }) {
       console.log("Initializing Session");
       // 1. Initialize Client
       const client = await createClient({
-        nodeUrlPool: "http://localhost:7740",
-        blockchainIid: 0,
+        // nodeUrlPool: "http://localhost:7740",
+        // blockchainIid: 0,
       });
 
       // 2. Connect with MetaMask
