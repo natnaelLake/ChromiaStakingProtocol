@@ -2,6 +2,7 @@ Chromia Staking Protocol
 Author Information
 
 Name: Bewuketu Lake
+
 Email: bewuketulake1212@gmail.com
 
 Project Description
