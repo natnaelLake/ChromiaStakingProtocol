@@ -44,8 +44,6 @@ Navigate to the project directory:
 
 Deploy the smart contract to your Chromia node:
 
-rell deploy staking_protocol.rell
-
 Set up the frontend:
 
     cd frontend
